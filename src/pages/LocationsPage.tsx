@@ -22,7 +22,7 @@ export default function LocationsPage() {
     const [modal, setModal] = useState<{ type: 'create' | 'edit' | 'add-item' | 'delete' | null, parentId?: string | null }>({ type: null });
     const [formData, setFormData] = useState({ name: '', description: '', quantity: 1, purchasePrice: 0 });
 
-    const { data: locationTree, isLoading: treeLoading } = useQuery({
+    const { data: locationTree, isLoading: treeLoading, error: treeError } = useQuery({
         queryKey: ['locations-tree'],
         queryFn: () => api.getLocationsTree(false),
     });
@@ -162,6 +162,24 @@ export default function LocationsPage() {
     };
 
     if (treeLoading) return <Layout><LoadingSpinner /></Layout>;
+
+    if (treeError) {
+        return (
+            <Layout>
+                <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                        <p className="text-red-600 mb-4">Failed to load locations</p>
+                        <button
+                            onClick={() => queryClient.invalidateQueries({ queryKey: ['locations-tree'] })}
+                            className="text-blue-600 hover:text-blue-700 font-medium"
+                        >
+                            Try Again
+                        </button>
+                    </div>
+                </div>
+            </Layout>
+        );
+    }
 
     const locationsHeader = (
         <div className="px-8 py-6 flex items-center gap-4">

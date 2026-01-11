@@ -65,6 +65,8 @@ export default function InventoryPage() {
     const { data: locationsData } = useQuery({
         queryKey: ['locations-tree'],
         queryFn: () => api.getLocationsTree(false),
+        retry: 1,
+        staleTime: 5 * 60 * 1000,
     });
 
 
@@ -82,8 +84,7 @@ export default function InventoryPage() {
             setIsAddModalOpen(false);
             resetForm();
         },
-        onError: (error) => {
-            console.error('Failed to create item:', error);
+        onError: () => {
             alert('Failed to create item. Please try again.');
         },
     });
@@ -94,8 +95,7 @@ export default function InventoryPage() {
             queryClient.invalidateQueries({ queryKey: ['items'] });
             setOpenMenuId(null);
         },
-        onError: (error) => {
-            console.error('Failed to delete item:', error);
+        onError: () => {
             alert('Failed to delete item. Please try again.');
         },
     });
@@ -122,10 +122,12 @@ export default function InventoryPage() {
     };
 
     const handleSelectAll = () => {
-        if (selectedItems.length === itemsData?.items.length) {
+        if (!itemsData?.items) return;
+
+        if (selectedItems.length === itemsData.items.length) {
             setSelectedItems([]);
         } else {
-            setSelectedItems(itemsData?.items.map((item: Item) => item.id) || []);
+            setSelectedItems(itemsData.items.map((item: Item) => item.id));
         }
     };
 
@@ -153,17 +155,21 @@ export default function InventoryPage() {
     const totalPages = itemsData ? Math.ceil(itemsData.total / 8) : 1;
 
     const flattenLocations = (nodes: any[]): any[] => {
+        if (!Array.isArray(nodes)) return [];
+
         let result: any[] = [];
-        nodes?.forEach(node => {
+        nodes.forEach(node => {
             result.push(node);
-            if (node.children) {
+            if (node.children && Array.isArray(node.children)) {
                 result = result.concat(flattenLocations(node.children));
             }
         });
         return result;
     };
 
-    const allLocations = locationsData ? flattenLocations(locationsData) : [];
+    const allLocations = locationsData && Array.isArray(locationsData)
+        ? flattenLocations(locationsData)
+        : [];
 
     const inventoryHeader = (
         <div className="px-6 py-5">
@@ -255,7 +261,7 @@ export default function InventoryPage() {
                                         <th className="w-12 px-6 py-3">
                                             <input
                                                 type="checkbox"
-                                                checked={selectedItems.length === itemsData?.items.length && itemsData?.items.length > 0}
+                                                checked={itemsData?.items ? selectedItems.length === itemsData.items.length && itemsData.items.length > 0 : false}
                                                 onChange={handleSelectAll}
                                                 className="w-4 h-4 text-blue-600 rounded border-gray-300"
                                             />
