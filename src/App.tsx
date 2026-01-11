@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Suspense, lazy } from 'react';
-import { ErrorBoundary } from './components/ErrorBoundary';
+import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { useAuthStore } from './store/authStore';
 
