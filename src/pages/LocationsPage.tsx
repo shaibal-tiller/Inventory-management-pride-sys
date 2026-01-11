@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {
     Search, Plus, ChevronRight, MapPin, Box, Trash2, X, Package, ArrowRight, Pencil
 } from 'lucide-react';
-import { api, VITE_API_BASE_URL } from '../lib/api';
+import { api, API_BASE_URL } from '../lib/api';
 import type { TreeItem } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
 import { Layout } from '../components/Layout';
@@ -295,7 +295,7 @@ export default function LocationsPage() {
                                                 <div className="w-12 h-12 bg-purple-100 rounded-lg overflow-hidden shrink-0">
                                                     {item.thumbnailId ? (
                                                         <img
-                                                            src={`${VITE_API_BASE_URL}/v1/items/${item.id}/attachments/${item.thumbnailId}?token=${attachmentToken}`}
+                                                            src={`${API_BASE_URL}/v1/items/${item.id}/attachments/${item.thumbnailId}?token=${attachmentToken}`}
                                                             className="w-full h-full object-cover"
                                                             alt=""
                                                         />

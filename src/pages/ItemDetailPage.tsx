@@ -5,7 +5,7 @@ import {
     ChevronRight, Edit, Trash2, Plus, MapPin, Calendar,
     Package, Paperclip, Activity, X, Upload
 } from 'lucide-react';
-import { api, VITE_API_BASE_URL } from '../lib/api';
+import { api, API_BASE_URL } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
 import { Layout } from '../components/Layout';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -130,7 +130,7 @@ export default function ItemDetailPage() {
 
     const currentImageId = selectedImageId || item.imageId;
     const getImageUrl = (attachmentId: string) =>
-        `${VITE_API_BASE_URL}/v1/items/${item.id}/attachments/${attachmentId}?token=${attachmentToken}`;
+        `${API_BASE_URL}/v1/items/${item.id}/attachments/${attachmentId}?token=${attachmentToken}`;
 
     const itemDetailHeader = (
         <div className="flex items-center justify-between px-6 py-4">

@@ -84,7 +84,7 @@ Add these to your `package.json`:
 Create `.env` in project root:
 
 ```env
-VITE_API_BASE_URL=http://4.213.57.100:3100/api
+API_BASE_URL=http://4.213.57.100:3100/api
 ```
 
 ### 5. Update index.css
