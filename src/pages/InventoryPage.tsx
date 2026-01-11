@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, Download, Plus, Filter, ChevronRight, Trash2, Eye, X, MoreVertical, Edit, Upload } from 'lucide-react';
-import { api, API_BASE_URL } from '../lib/api';
+import { api, VITE_API_BASE_URL } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
 import { Layout } from '../components/Layout';
 import { TableSkeleton } from '../components/LoadingSpinner';
@@ -289,7 +289,7 @@ export default function InventoryPage() {
                                                         <div className="w-10 h-10 bg-purple-100 rounded-lg flex-shrink-0 overflow-hidden">
                                                             {item.thumbnailId ? (
                                                                 <img
-                                                                    src={`${API_BASE_URL}/v1/items/${item.id}/attachments/${item.thumbnailId}?token=${attachmentToken}`}
+                                                                    src={`${VITE_API_BASE_URL}/v1/items/${item.id}/attachments/${item.thumbnailId}?token=${attachmentToken}`}
                                                                     className="w-full h-full object-cover"
                                                                     alt=""
                                                                 />

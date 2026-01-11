@@ -1,9 +1,9 @@
 import axios from "axios";
 
-export const API_BASE_URL = "/api";
+export const VITE_API_BASE_URL = "/api";
 
 export const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: VITE_API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -166,6 +166,6 @@ export const api = {
 
   getItemImageUrl: (itemId: string, attachmentId: string) => {
     const token = localStorage.getItem("attachment_token");
-    return `${API_BASE_URL}/v1/items/${itemId}/attachments/${attachmentId}?token=${token}`;
+    return `${VITE_API_BASE_URL}/v1/items/${itemId}/attachments/${attachmentId}?token=${token}`;
   },
 };
