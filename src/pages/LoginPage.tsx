@@ -1,13 +1,20 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Eye, EyeOff, ArrowRight, User } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
+import loginIcon from '../assets/loginicon.png';
+import loginIllustration from '../assets/Login.png';
 
+/**
+ * LoginPage Component
+ * Handles user authentication with a modern, split-screen design
+ */
 export default function LoginPage() {
     const navigate = useNavigate();
     const setAuth = useAuthStore((state) => state.setAuth);
 
+    // Form state management
     const [formData, setFormData] = useState({
         username: '',
         password: '',
@@ -17,6 +24,9 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
+    /**
+     * Handles form submission and user authentication
+     */
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
@@ -48,52 +58,20 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen flex">
+        <div className="min-h-screen flex bg-gray-50">
             {/* Left Side - Illustration */}
-            <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-50 to-indigo-50 relative overflow-hidden">
-                <div className="absolute top-20 left-20 w-64 h-64 bg-primary-500 rounded-full blur-[128px] opacity-10" />
-                <div className="absolute bottom-20 right-20 w-96 h-96 bg-indigo-600 rounded-full blur-[128px] opacity-10" />
-
-                <div className="relative flex flex-col items-center justify-center w-full p-12 z-10">
-                    <div className="max-w-lg w-full bg-white rounded-2xl shadow-lg p-8 border border-slate-200">
-                        <div className="grid grid-cols-2 gap-4 mb-8">
-                            {/* Shelves illustration placeholder */}
-                            <div className="space-y-3">
-                                <div className="bg-slate-100 h-20 rounded-lg flex items-center justify-center gap-2 p-3">
-                                    <div className="w-12 h-12 bg-blue-200 rounded" />
-                                    <div className="w-12 h-12 bg-yellow-200 rounded" />
-                                </div>
-                                <div className="bg-slate-100 h-20 rounded-lg flex items-center justify-center gap-2 p-3">
-                                    <div className="w-12 h-12 bg-green-200 rounded" />
-                                    <div className="w-12 h-12 bg-purple-200 rounded" />
-                                </div>
-                                <div className="bg-slate-100 h-20 rounded-lg flex items-center justify-center gap-2 p-3">
-                                    <div className="w-12 h-12 bg-orange-200 rounded" />
-                                    <div className="w-12 h-12 bg-teal-200 rounded" />
-                                </div>
-                            </div>
-                            <div className="space-y-3">
-                                <div className="bg-slate-100 h-20 rounded-lg flex items-center justify-center gap-2 p-3">
-                                    <div className="w-12 h-12 bg-red-200 rounded" />
-                                    <div className="w-12 h-12 bg-pink-200 rounded" />
-                                </div>
-                                <div className="bg-slate-100 h-20 rounded-lg flex items-center justify-center gap-2 p-3">
-                                    <div className="w-12 h-12 bg-indigo-200 rounded" />
-                                    <div className="w-12 h-12 bg-blue-200 rounded" />
-                                </div>
-                                <div className="bg-slate-100 h-20 rounded-lg flex items-center justify-center gap-2 p-3">
-                                    <div className="w-12 h-12 bg-yellow-200 rounded" />
-                                    <div className="w-12 h-12 bg-green-200 rounded" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="mt-12 text-center">
-                        <h2 className="text-2xl font-semibold text-slate-800 mb-3">
-                            Organize Everything
+            <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 items-center justify-center p-12">
+                <div className="max-w-md">
+                    <img
+                        src={loginIllustration}
+                        alt="Home Inventory Organization"
+                        className="w-full h-auto drop-shadow-2xl"
+                    />
+                    <div className="mt-8 text-center">
+                        <h2 className="text-2xl font-bold text-gray-800 mb-3">
+                            Organize Your Home
                         </h2>
-                        <p className="text-slate-600 max-w-md">
+                        <p className="text-gray-600">
                             Keep track of your belongings, warranties, and important documents all in one secure place.
                         </p>
                     </div>
@@ -101,57 +79,53 @@ export default function LoginPage() {
             </div>
 
             {/* Right Side - Login Form */}
-            <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
+            <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8">
                 <div className="w-full max-w-md">
-                    {/* Header */}
-                    <div className="text-center mb-8">
-                        <div className="inline-flex items-center justify-center w-12 h-12 bg-primary-500 rounded-xl shadow-md mb-4">
-                            <Package className="w-6 h-6 text-white" />
-                        </div>
-                        <h1 className="text-2xl font-bold text-slate-900 mb-1">
-                            Home Inventory
-                        </h1>
-                        <p className="text-slate-600 text-sm">
-                            Track and organize your things
-                        </p>
+                    {/* App Logo & Title */}
+                    <div className="flex items-center justify-center mb-8">
+                        <img
+                            src={loginIcon}
+                            alt="Home Inventory"
+                            className="w-16 h-16"
+                        />
                     </div>
 
                     {/* Login Form */}
-                    <div className="bg-white border border-slate-200 rounded-xl shadow-lg p-8">
-                        <h2 className="text-xl font-semibold text-slate-900 mb-6">
-                            Sign in to your account
-                        </h2>
+                    <div className="bg-white rounded-2xl shadow-xl p-8">
+                        <h1 className="text-3xl font-bold text-gray-900 mb-2 text-center">
+                            Welcome Back
+                        </h1>
+                        <p className="text-gray-500 text-center mb-8">
+                            Sign in to continue to your inventory
+                        </p>
 
                         {error && (
-                            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r text-red-700 text-sm">
                                 {error}
                             </div>
                         )}
 
-                        <form onSubmit={handleSubmit} className="space-y-5">
+                        <form onSubmit={handleSubmit} className="space-y-6">
                             {/* Username */}
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-2">
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
                                     Username
                                 </label>
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        value={formData.username}
-                                        onChange={(e) =>
-                                            setFormData({ ...formData, username: e.target.value })
-                                        }
-                                        placeholder="Enter your username"
-                                        className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-colors"
-                                        required
-                                    />
-                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                                </div>
+                                <input
+                                    type="text"
+                                    value={formData.username}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, username: e.target.value })
+                                    }
+                                    placeholder="Enter your username"
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                    required
+                                />
                             </div>
 
                             {/* Password */}
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-2">
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
                                     Password
                                 </label>
                                 <div className="relative">
@@ -162,13 +136,13 @@ export default function LoginPage() {
                                             setFormData({ ...formData, password: e.target.value })
                                         }
                                         placeholder="Enter your password"
-                                        className="w-full pl-4 pr-10 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-colors"
+                                        className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                                         required
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                                     >
                                         {showPassword ? (
                                             <EyeOff className="w-5 h-5" />
@@ -188,11 +162,11 @@ export default function LoginPage() {
                                         onChange={(e) =>
                                             setFormData({ ...formData, rememberMe: e.target.checked })
                                         }
-                                        className="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500"
+                                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                     />
-                                    <span className="text-sm text-slate-700">Remember me</span>
+                                    <span className="text-sm text-gray-600">Remember me</span>
                                 </label>
-                                <a href="#" className="text-sm text-primary-500 hover:text-primary-600 font-medium">
+                                <a href="#" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
                                     Forgot password?
                                 </a>
                             </div>
@@ -201,37 +175,20 @@ export default function LoginPage() {
                             <button
                                 type="submit"
                                 disabled={isLoading}
-                                className="w-full bg-primary-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-primary-600 focus:ring-4 focus:ring-primary-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                className="w-full bg-blue-600 text-white py-3.5 px-4 rounded-lg font-semibold hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {isLoading ? (
-                                    <span>Signing in...</span>
-                                ) : (
-                                    <>
-                                        <span>Sign in</span>
-                                        <ArrowRight className="w-4 h-4" />
-                                    </>
-                                )}
+                                {isLoading ? 'Signing in...' : 'Sign In'}
                             </button>
                         </form>
 
                         {/* Register Link */}
-                        <p className="mt-6 text-center text-sm text-slate-600">
+                        <p className="mt-6 text-center text-sm text-gray-600">
                             Don't have an account?{' '}
-                            <a href="#" className="text-primary-500 hover:text-primary-600 font-medium">
-                                Create one
+                            <a href="#" className="text-blue-600 hover:text-blue-700 font-semibold">
+                                Create Account
                             </a>
                         </p>
                     </div>
-
-                    {/* Footer Links */}
-                    <div className="mt-8 text-center text-xs text-slate-500 space-x-4">
-                        <a href="#" className="hover:text-slate-700">Help Center</a>
-                        <span>•</span>
-                        <a href="#" className="hover:text-slate-700">Privacy Policy</a>
-                        <span>•</span>
-                        <a href="#" className="hover:text-slate-700">Terms of Service</a>
-                    </div>
-                    <p className="mt-2 text-center text-xs text-slate-400">Version 1.2.4</p>
                 </div>
             </div>
         </div>
