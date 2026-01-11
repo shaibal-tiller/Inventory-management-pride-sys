@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import {
-    LayoutDashboard,
+    Home,
     Package,
     MapPin,
     Settings,
@@ -33,7 +33,7 @@ export  function Sidebar() {
     }, []);
 
     const navigationItems = [
-        { name: 'Dashboard', href: '/', icon: LayoutDashboard, disabled: false },
+        { name: 'Dashboard', href: '/', icon: Home, disabled: false },
         { name: 'Inventory', href: '/inventory', icon: Package, disabled: false },
         { name: 'Locations', href: '/locations', icon: MapPin, disabled: false },
         { name: 'Labels', href: '#', icon: Tag, disabled: true },
@@ -72,6 +72,8 @@ export  function Sidebar() {
         );
     };
 
+    const isInventoryPage = location.pathname.startsWith('/inventory') || location.pathname === '/';
+
     return (
         <aside className="w-64 bg-white border-r border-slate-200 flex flex-col h-screen sticky top-0">
             <div className="p-6 border-b border-slate-100">
@@ -79,7 +81,12 @@ export  function Sidebar() {
                     <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
                         <Package className="w-5 h-5 text-white" />
                     </div>
-                    <span className="text-xl font-bold text-slate-900 tracking-tight">Inventory</span>
+                    <div className="flex flex-col">
+                        <span className="text-base font-semibold text-slate-900">Home Inventory</span>
+                        {isInventoryPage && (
+                            <span className="text-xs text-slate-500">Manage your items</span>
+                        )}
+                    </div>
                 </div>
             </div>
 

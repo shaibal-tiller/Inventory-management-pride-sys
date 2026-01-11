@@ -1,6 +1,5 @@
 import axios from "axios";
 
-// Using relative path to work with the Vite proxy configured in vite.config.ts
 export const API_BASE_URL = "/api";
 
 export const apiClient = axios.create({
@@ -48,6 +47,7 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
 export interface TreeItem {
   id: string;
   name: string;
@@ -108,7 +108,7 @@ export interface ItemDetail extends ItemSummary {
   purchaseTime?: string;
   warrantyExpires?: string;
   notes?: string;
-
+  purchaseFrom?: string;
   imageId?: string;
   attachments?: Array<{
     id: string;
@@ -118,7 +118,6 @@ export interface ItemDetail extends ItemSummary {
 }
 
 export const api = {
-  // Auth & User
   login: async (data: any) =>
     (
       await apiClient.post("/v1/users/login", new URLSearchParams(data), {
@@ -127,15 +126,15 @@ export const api = {
     ).data,
   getSelf: async () => (await apiClient.get("/v1/users/self")).data.item,
 
-  // Items
   getItems: async (params?: any) =>
     (await apiClient.get("/v1/items", { params })).data,
   getItem: async (id: string) => (await apiClient.get(`/v1/items/${id}`)).data,
   createItem: async (data: any) =>
     (await apiClient.post("/v1/items", data)).data,
+  updateItem: async (id: string, data: any) =>
+    (await apiClient.put(`/v1/items/${id}`, data)).data,
   deleteItem: async (id: string) => await apiClient.delete(`/v1/items/${id}`),
 
-  // Locations
   getLocationsTree: async (withItems: boolean = false) =>
     (await apiClient.get("/v1/locations/tree", { params: { withItems } })).data,
   getLocation: async (id: string) =>
@@ -152,10 +151,8 @@ export const api = {
   deleteLocation: async (id: string) =>
     await apiClient.delete(`/v1/locations/${id}`),
 
-  // Labels
   getLabels: async () => (await apiClient.get("/v1/labels")).data,
 
-  // Attachments
   uploadAttachment: async (itemId: string, file: File) => {
     const formData = new FormData();
     formData.append("file", file);

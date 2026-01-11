@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-    ChevronRight, Edit, Trash2, Plus, MapPin, DollarSign,
-    Shield, FileText, Package, Paperclip, Activity, X, Upload, Calendar, Tag, Info, CheckCircle
+    ChevronRight, Edit, Trash2, Plus, MapPin, Calendar,
+    Package, Paperclip, Activity, X, Upload
 } from 'lucide-react';
 import { api, API_BASE_URL } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
@@ -16,10 +16,24 @@ export default function ItemDetailPage() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { attachmentToken } = useAuthStore();
+
     const [activeTab, setActiveTab] = useState<'details' | 'attachments' | 'activity'>('details');
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [editFormData, setEditFormData] = useState({
+        name: '',
+        description: '',
+        quantity: 1,
+        purchasePrice: 0,
+        notes: '',
+        manufacturer: '',
+        modelNumber: '',
+        serialNumber: '',
+        purchaseFrom: ''
+    });
+    const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
 
     const { data: item, isLoading, error } = useQuery({
         queryKey: ['item', id],
@@ -35,6 +49,15 @@ export default function ItemDetailPage() {
         }
     });
 
+    const updateMutation = useMutation({
+        mutationFn: (data: any) => api.updateItem(id!, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['item', id] });
+            queryClient.invalidateQueries({ queryKey: ['items'] });
+            setIsEditMode(false);
+        }
+    });
+
     const uploadMutation = useMutation({
         mutationFn: (file: File) => api.uploadAttachment(id!, file),
         onSuccess: () => {
@@ -46,148 +69,538 @@ export default function ItemDetailPage() {
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) { setUploading(true); uploadMutation.mutate(file); }
+        if (file) {
+            setUploading(true);
+            uploadMutation.mutate(file);
+        }
     };
 
-    if (isLoading) return <Layout><LoadingSpinner /></Layout>;
-    if (error || !item) return <Layout><div className="p-8 text-center text-red-600 font-bold">Item not found.</div></Layout>;
+    const handleEdit = () => {
+        if (item) {
+            setEditFormData({
+                name: item.name,
+                description: item.description || '',
+                quantity: item.quantity,
+                purchasePrice: item.purchasePrice || 0,
+                notes: item.notes || '',
+                manufacturer: item.manufacturer || '',
+                modelNumber: item.modelNumber || '',
+                serialNumber: item.serialNumber || '',
+                purchaseFrom: item.purchaseFrom || ''
+            });
+            setIsEditMode(true);
+        }
+    };
 
-    // Helpers for specific field extraction from API fields array
-    const getFieldValue = (name: string) => item.fields?.find((f: any) => f.name.toLowerCase() === name.toLowerCase())?.textValue || '—';
+    const handleSaveEdit = () => {
+        updateMutation.mutate(editFormData);
+    };
+
+    const handleDelete = () => {
+        deleteMutation.mutate();
+    };
+
+    if (isLoading) {
+        return (
+            <Layout>
+                <div className="flex items-center justify-center h-full">
+                    <LoadingSpinner />
+                </div>
+            </Layout>
+        );
+    }
+
+    if (error || !item) {
+        return (
+            <Layout>
+                <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                        <p className="text-red-600 mb-4">Failed to load item</p>
+                        <button
+                            onClick={() => navigate('/inventory')}
+                            className="text-blue-600 hover:text-blue-700 font-medium"
+                        >
+                            Back to Inventory
+                        </button>
+                    </div>
+                </div>
+            </Layout>
+        );
+    }
+
+    const currentImageId = selectedImageId || item.imageId;
+    const getImageUrl = (attachmentId: string) =>
+        `${API_BASE_URL}/v1/items/${item.id}/attachments/${attachmentId}?token=${attachmentToken}`;
+
+    const itemDetailHeader = (
+        <div className="flex items-center justify-between px-6 py-4">
+            <div className="flex items-center gap-2 text-sm">
+                <Link to="/inventory" className="text-gray-500 hover:text-gray-700">
+                    Inventory
+                </Link>
+                <ChevronRight className="w-4 h-4 text-gray-400" />
+                <span className="text-gray-900 font-medium">{item.name}</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+                {!isEditMode ? (
+                    <>
+                        <button
+                            onClick={handleEdit}
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                            <Edit className="w-4 h-4 text-gray-700" />
+                            <span className="text-sm font-medium text-gray-700">Edit</span>
+                        </button>
+                        <button
+                            onClick={() => setIsAttachmentModalOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                            <Paperclip className="w-4 h-4 text-gray-700" />
+                            <span className="text-sm font-medium text-gray-700">Add Attachment</span>
+                        </button>
+                        <button
+                            onClick={() => setIsDeleteModalOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-red-50 transition-colors"
+                        >
+                            <Trash2 className="w-4 h-4 text-red-600" />
+                            <span className="text-sm font-medium text-red-600">Delete</span>
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        <button
+                            onClick={() => setIsEditMode(false)}
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                            <span className="text-sm font-medium text-gray-700">Cancel</span>
+                        </button>
+                        <button
+                            onClick={handleSaveEdit}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                            <span className="text-sm font-medium">Save Changes</span>
+                        </button>
+                    </>
+                )}
+            </div>
+        </div>
+    );
 
     return (
-        <Layout>
-            <div className="h-full bg-[#F8FAFC] overflow-auto flex flex-col items-center">
-                <div className="w-full max-w-[1440px] flex flex-col p-10 gap-10">
-
-                    {/* 1. TOP HEADER SECTION */}
-                    <div className="flex items-end justify-between">
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-2 text-[14px] text-slate-400 font-medium mb-2">
-                                <Link to="/inventory" className="hover:text-primary-500">Inventory</Link>
-                                <ChevronRight className="w-4 h-4" />
-                                <span className="text-slate-900">{item.name}</span>
-                            </div>
-                            <h1 className="text-[42px] font-black text-[#0F172A] tracking-tighter leading-none">{item.name}</h1>
-                            <div className="flex gap-2">
-                                {item.labels.map((l: any) => (
-                                    <span key={l.id} className="px-4 py-1.5 rounded-full text-[12px] font-black uppercase tracking-wider"
-                                        style={{ backgroundColor: `${l.color}15`, color: l.color, border: `1px solid ${l.color}40` }}>{l.name}</span>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="flex gap-4 pb-1">
-                            <button className="flex items-center gap-2 px-6 py-3.5 bg-white border border-slate-200 rounded-2xl font-black text-slate-700 hover:bg-slate-50 shadow-sm transition-all active:scale-95"><Edit className="w-5 h-5" /> EDIT</button>
-                            <button onClick={() => setIsAttachmentModalOpen(true)} className="flex items-center gap-2 px-6 py-3.5 bg-white border border-slate-200 rounded-2xl font-black text-slate-700 hover:bg-slate-50 shadow-sm transition-all active:scale-95"><Paperclip className="w-5 h-5" /> ADD MEDIA</button>
-                            <button onClick={() => setIsDeleteModalOpen(true)} className="flex items-center gap-2 px-6 py-3.5 bg-[#FFF1F2] text-[#E11D48] border border-[#FECDD3] rounded-2xl font-black hover:bg-[#FFE4E6] shadow-sm transition-all active:scale-95"><Trash2 className="w-5 h-5" /> DELETE</button>
-                        </div>
-                    </div>
-
-                    {/* 2. MIDDLE ROW: SAME HEIGHT BOXES */}
-                    <div className="flex flex-col lg:flex-row gap-10 items-stretch">
-                        {/* LEFT: PHOTO & ATTACHMENT PREVIEW OVERLAY */}
-                        <div className="flex-1 min-h-[580px] bg-white border border-slate-200 rounded-[40px] overflow-hidden shadow-xl relative group">
-                            <div className="w-full h-full flex items-center justify-center bg-[#F1F5F9] p-12">
-                                {item.imageId ? (
-                                    <img src={`${API_BASE_URL}/v1/items/${item.id}/attachments/${item.imageId}?token=${attachmentToken}`}
-                                        className="max-h-full object-contain mix-blend-multiply transition-transform duration-700 group-hover:scale-105" alt="" />
-                                ) : <Package className="w-40 h-40 text-slate-200" />}
+        <Layout header={itemDetailHeader}>
+            <div className="flex flex-col h-full overflow-auto bg-white">
+                <div className="p-6 space-y-6">
+                    {!isEditMode ? (
+                        <>
+                            <div>
+                                <h1 className="text-3xl font-semibold text-gray-900 mb-3">{item.name}</h1>
+                                <div className="flex gap-2">
+                                    {item.labels && item.labels.length > 0 ? (
+                                        item.labels.map((label: any) => (
+                                            <span
+                                                key={label.id}
+                                                className="px-3 py-1 rounded-md text-sm font-medium"
+                                                style={{
+                                                    backgroundColor: `${label.color}20`,
+                                                    color: label.color
+                                                }}
+                                            >
+                                                {label.name}
+                                            </span>
+                                        ))
+                                    ) : (
+                                        <span className="text-sm text-gray-500">No labels</span>
+                                    )}
+                                </div>
                             </div>
 
-                            {/* ATTACHMENT PREVIEW OVERLAY AT BOTTOM */}
-                            <div className="absolute bottom-6 left-6 right-6 flex gap-4 overflow-x-auto p-4 bg-white/40 backdrop-blur-xl border border-white/40 rounded-[32px] shadow-2xl">
-                                {item.attachments?.map((att: any) => (
-                                    <div key={att.id} className="w-20 h-20 rounded-2xl border-2 border-white shadow-lg flex-shrink-0 overflow-hidden hover:scale-110 transition-all cursor-pointer">
-                                        <img src={`${API_BASE_URL}/v1/items/${item.id}/attachments/${att.id}?token=${attachmentToken}`} className="w-full h-full object-cover" alt="" />
+                            <div className="grid grid-cols-2 gap-6">
+                                <div className="space-y-4">
+                                    <div className="bg-gray-100 rounded-lg aspect-square flex items-center justify-center overflow-hidden">
+                                        {currentImageId ? (
+                                            <img
+                                                src={getImageUrl(currentImageId)}
+                                                alt={item.name}
+                                                className="w-full h-full object-contain"
+                                                onError={(e) => {
+                                                    console.error('Image failed to load:', getImageUrl(currentImageId));
+                                                    e.currentTarget.style.display = 'none';
+                                                    e.currentTarget.parentElement!.innerHTML = '<div class="flex items-center justify-center w-full h-full"><svg class="w-24 h-24 text-gray-300" fill="currentColor" viewBox="0 0 20 20"><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"/></svg></div>';
+                                                }}
+                                            />
+                                        ) : (
+                                            <Package className="w-24 h-24 text-gray-300" />
+                                        )}
                                     </div>
-                                ))}
-                                <button onClick={() => setIsAttachmentModalOpen(true)} className="w-20 h-20 rounded-2xl bg-primary-500 text-white flex items-center justify-center shadow-lg hover:bg-primary-600 transition-all flex-shrink-0 active:scale-90">
-                                    <Plus className="w-8 h-8" />
-                                </button>
+
+                                    <div className="flex gap-2 overflow-x-auto">
+                                        {item.imageId && (
+                                            <button
+                                                onClick={() => setSelectedImageId(item.imageId!)}
+                                                className={`w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 border-2 ${(!selectedImageId || selectedImageId === item.imageId)
+                                                    ? 'border-blue-500'
+                                                    : 'border-gray-200'
+                                                    }`}
+                                            >
+                                                <img
+                                                    src={getImageUrl(item.imageId)}
+                                                    alt=""
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </button>
+                                        )}
+                                        {item.attachments?.map((att: any) => (
+                                            <button
+                                                key={att.id}
+                                                onClick={() => setSelectedImageId(att.id)}
+                                                className={`w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 border-2 ${selectedImageId === att.id
+                                                    ? 'border-blue-500'
+                                                    : 'border-gray-200'
+                                                    }`}
+                                            >
+                                                <img
+                                                    src={getImageUrl(att.id)}
+                                                    alt=""
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </button>
+                                        ))}
+                                        <button
+                                            onClick={() => setIsAttachmentModalOpen(true)}
+                                            className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50 flex-shrink-0"
+                                        >
+                                            <Plus className="w-6 h-6 text-gray-400" />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="bg-gray-50 rounded-lg p-6">
+                                    <h3 className="text-sm font-semibold text-gray-900 mb-4">Key Details</h3>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <p className="text-xs text-gray-500 mb-1">Location</p>
+                                            <p className="text-sm text-gray-900 flex items-center gap-1">
+                                                <MapPin className="w-4 h-4 text-blue-600" />
+                                                {item.location?.name || 'N/A'}
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <p className="text-xs text-gray-500 mb-1">Labels</p>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {item.labels && item.labels.length > 0 ? (
+                                                    item.labels.map((label: any) => (
+                                                        <span
+                                                            key={label.id}
+                                                            className="px-2 py-0.5 rounded text-xs font-medium"
+                                                            style={{
+                                                                backgroundColor: `${label.color}20`,
+                                                                color: label.color
+                                                            }}
+                                                        >
+                                                            {label.name}
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-sm text-gray-900">N/A</span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <p className="text-xs text-gray-500 mb-1">Quantity</p>
+                                            <p className="text-sm text-gray-900">{item.quantity}</p>
+                                        </div>
+
+                                        {item.purchaseTime && (
+                                            <div>
+                                                <p className="text-xs text-gray-500 mb-1">Purchase Date</p>
+                                                <p className="text-sm text-gray-900 flex items-center gap-1">
+                                                    <Calendar className="w-4 h-4 text-gray-400" />
+                                                    {format(new Date(item.purchaseTime), 'MMMM d, yyyy')}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {item.purchasePrice !== null && item.purchasePrice !== undefined && (
+                                            <div>
+                                                <p className="text-xs text-gray-500 mb-1">Purchase Price</p>
+                                                <p className="text-xl font-semibold text-gray-900">
+                                                    ${item.purchasePrice.toFixed(2)}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {item.warrantyExpires && (
+                                            <div>
+                                                <p className="text-xs text-gray-500 mb-1">Warranty</p>
+                                                <span className="inline-flex items-center px-2.5 py-1 bg-green-50 text-green-700 rounded-full text-xs font-medium">
+                                                    Active until {format(new Date(item.warrantyExpires), 'MMMM d, yyyy')}
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {item.notes && (
+                                            <div>
+                                                <p className="text-xs text-gray-500 mb-1">Notes</p>
+                                                <p className="text-sm text-gray-600 leading-relaxed">
+                                                    {item.notes}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="space-y-4 max-w-3xl">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                                <input
+                                    type="text"
+                                    value={editFormData.name}
+                                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                                <input
+                                    type="text"
+                                    value={editFormData.description}
+                                    onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+                                    <input
+                                        type="number"
+                                        value={editFormData.quantity}
+                                        onChange={(e) => setEditFormData({ ...editFormData, quantity: parseInt(e.target.value) || 1 })}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Purchase Price</label>
+                                    <input
+                                        type="number"
+                                        value={editFormData.purchasePrice}
+                                        onChange={(e) => setEditFormData({ ...editFormData, purchasePrice: parseFloat(e.target.value) || 0 })}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                        step="0.01"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                                <textarea
+                                    value={editFormData.notes}
+                                    onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none h-24"
+                                />
                             </div>
                         </div>
+                    )}
 
-                        {/* RIGHT: KEY DETAILS BOX */}
-                        <div className="w-full lg:w-[480px] bg-[#1E293B] rounded-[40px] p-10 shadow-2xl flex flex-col justify-between text-white">
-                            <h2 className="text-2xl font-black flex items-center gap-3 mb-10 uppercase tracking-widest">
-                                <div className="w-2 h-8 bg-primary-500 rounded-full" /> Key Details
-                            </h2>
-                            <div className="space-y-8 flex-1">
-                                <DetailItem icon={<MapPin />} label="Location" value={item.location?.name || 'Unassigned'} />
-                                <DetailItem icon={<Tag />} label="Labels" value={item.labels.map((l: any) => l.name).join(', ') || 'None'} />
-                                <DetailItem icon={<Package />} label="Quantity" value={`${item.quantity} Units`} />
-                                <DetailItem icon={<Calendar />} label="Purchased Date" value={item.purchaseTime ? format(new Date(item.purchaseTime), 'PPP') : '—'} />
-                                <DetailItem icon={<DollarSign />} label="Purchased Price" value={item.purchasePrice ? `$${item.purchasePrice.toLocaleString()}` : '—'} />
-                                <DetailItem icon={<Shield />} label="Warranty" value={item.warrantyExpires ? format(new Date(item.warrantyExpires), 'MMMM yyyy') : 'No Warranty'} />
-                                <DetailItem icon={<FileText />} label="Notes" value={item.notes || '—'} />
-                            </div>
+                    <div className="border border-gray-200 rounded-lg overflow-hidden">
+                        <div className="flex border-b border-gray-200 bg-white">
+                            <button
+                                onClick={() => setActiveTab('details')}
+                                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'details'
+                                    ? 'border-blue-600 text-blue-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                                    }`}
+                            >
+                                Details
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('attachments')}
+                                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'attachments'
+                                    ? 'border-blue-600 text-blue-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                                    }`}
+                            >
+                                Attachments
+                                {item.attachments && item.attachments.length > 0 && (
+                                    <span className="ml-2 px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs">
+                                        {item.attachments.length}
+                                    </span>
+                                )}
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('activity')}
+                                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'activity'
+                                    ? 'border-blue-600 text-blue-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                                    }`}
+                            >
+                                Activity
+                            </button>
                         </div>
-                    </div>
 
-                    {/* 3. BOTTOM BOX: TABS MATCHING WIDTH */}
-                    <div className="bg-white border border-slate-200 rounded-[40px] overflow-hidden shadow-xl min-h-[500px]">
-                        <div className="flex border-b bg-[#F8FAFC]">
-                            {['details', 'attachments', 'activity'].map((tab) => (
-                                <button key={tab} onClick={() => setActiveTab(tab as any)}
-                                    className={`px-12 py-7 text-[15px] font-black uppercase tracking-[0.2em] border-b-4 transition-all ${activeTab === tab ? 'border-primary-500 text-primary-600 bg-white' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
-                                    {tab}
-                                </button>
-                            ))}
-                        </div>
-
-                        <div className="p-16">
+                        <div className="p-6 bg-white">
                             {activeTab === 'details' && (
-                                <div className="grid grid-cols-2 gap-32">
-                                    <div className="space-y-12">
-                                        <SectionTitle title="Product Information" dotColor="bg-primary-500" />
-                                        <div className="space-y-10">
-                                            <TabRow label="Brand" value={item.manufacturer || '—'} />
-                                            <TabRow label="Model" value={item.modelNumber || '—'} />
-                                            <TabRow label="Color" value={getFieldValue('Color')} />
-                                            <TabRow label="Condition" value={getFieldValue('Condition')} />
+                                <div className="grid grid-cols-2 gap-8">
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-gray-900 mb-4">Product Information</h4>
+                                        <div className="space-y-3">
+                                            <div>
+                                                <p className="text-xs text-gray-500">Brand</p>
+                                                <p className="text-sm font-medium text-gray-900">{item.manufacturer || 'N/A'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-500">Model</p>
+                                                <p className="text-sm font-medium text-gray-900">{item.modelNumber || 'N/A'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-500">Color</p>
+                                                <p className="text-sm font-medium text-gray-900">N/A</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-500">Condition</p>
+                                                <p className="text-sm font-medium text-gray-900">N/A</p>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="space-y-12">
-                                        <SectionTitle title="Additional Details" dotColor="bg-slate-300" />
-                                        <div className="space-y-10">
-                                            <TabRow label="Serial Number" value={item.serialNumber || '—'} />
-                                            <TabRow label="Purchased From" value={item.purchaseFrom || '—'} />
-                                            <TabRow label="Last Updated" value={format(new Date(item.updatedAt), 'PPP p')} />
+
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-gray-900 mb-4">Additional Details</h4>
+                                        <div className="space-y-3">
+                                            <div>
+                                                <p className="text-xs text-gray-500">Serial Number</p>
+                                                <p className="text-sm font-medium text-gray-900">{item.serialNumber || 'N/A'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-500">Purchased From</p>
+                                                <p className="text-sm font-medium text-gray-900">{item.purchaseFrom || 'N/A'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-500">Last Updated</p>
+                                                <p className="text-sm font-medium text-gray-900">
+                                                    {item.updatedAt ? format(new Date(item.updatedAt), 'MMMM d, yyyy, h:mm a') : 'N/A'}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             )}
 
                             {activeTab === 'attachments' && (
-                                <div className="grid grid-cols-4 gap-8">
-                                    {item.attachments?.map((att: any) => (
-                                        <div key={att.id} className="border border-slate-200 rounded-[32px] p-6 flex flex-col items-center gap-4 bg-[#F8FAFC] hover:bg-white transition-colors cursor-pointer group">
-                                            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:shadow-md transition-all">
-                                                <Paperclip className="text-primary-500" />
-                                            </div>
-                                            <p className="font-bold text-slate-800 text-center truncate w-full">{att.title}</p>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{att.mimeType}</p>
+                                <div>
+                                    {item.attachments && item.attachments.length > 0 ? (
+                                        <div className="grid grid-cols-4 gap-4">
+                                            {item.attachments.map((att: any) => (
+                                                <div
+                                                    key={att.id}
+                                                    className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 cursor-pointer"
+                                                >
+                                                    <div className="aspect-square bg-gray-100 rounded-lg mb-2 overflow-hidden">
+                                                        <img
+                                                            src={getImageUrl(att.id)}
+                                                            alt={att.title}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    </div>
+                                                    <p className="text-sm font-medium text-gray-900 truncate">
+                                                        {att.title || 'Untitled'}
+                                                    </p>
+                                                </div>
+                                            ))}
                                         </div>
-                                    ))}
+                                    ) : (
+                                        <div className="text-center py-12">
+                                            <Paperclip className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                                            <p className="text-gray-500 mb-2">No attachments yet</p>
+                                            <button
+                                                onClick={() => setIsAttachmentModalOpen(true)}
+                                                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                            >
+                                                Add your first attachment
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {activeTab === 'activity' && (
+                                <div className="text-center py-12">
+                                    <Activity className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                                    <p className="text-gray-500">No activity recorded</p>
                                 </div>
                             )}
                         </div>
                     </div>
                 </div>
 
-                {/* MODAL OVERLAY: ATTACHMENT */}
+                {isDeleteModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+                        <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Item</h3>
+                            <p className="text-sm text-gray-600 mb-6">
+                                Are you sure you want to delete "{item.name}"? This action cannot be undone.
+                            </p>
+                            <div className="flex gap-3 justify-end">
+                                <button
+                                    onClick={() => setIsDeleteModalOpen(false)}
+                                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleDelete}
+                                    className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700"
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {isAttachmentModalOpen && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0F172A]/80 backdrop-blur-md p-6">
-                        <div className="bg-white w-full max-w-xl rounded-[48px] overflow-hidden shadow-2xl p-16 relative animate-in zoom-in duration-300">
-                            <button onClick={() => setIsAttachmentModalOpen(false)} className="absolute top-10 right-10 text-slate-300 hover:text-slate-900 transition-colors"><X className="w-8 h-8" /></button>
-                            <h2 className="text-4xl font-black text-slate-900 mb-4 tracking-tighter">Add Media</h2>
-                            <p className="text-slate-500 mb-12 text-lg font-medium">Upload photographs, manuals, or receipts.</p>
-                            <div className="border-4 border-dashed border-slate-100 rounded-[40px] p-20 flex flex-col items-center justify-center bg-[#F8FAFC] hover:bg-white hover:border-primary-200 transition-all cursor-pointer group relative">
-                                <Upload className="w-20 h-20 text-slate-200 group-hover:text-primary-500 mb-8 transition-colors" />
-                                <input type="file" id="file-upload" className="hidden" onChange={handleFileUpload} />
-                                <label htmlFor="file-upload" className="bg-[#0F172A] text-white px-10 py-5 rounded-[24px] font-black text-lg cursor-pointer hover:bg-primary-600 transition-all shadow-2xl">
-                                    {uploading ? 'PROCESSING...' : 'BROWSE FILES'}
-                                </label>
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+                        <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-semibold text-gray-900">Add Attachment</h3>
+                                <button
+                                    onClick={() => setIsAttachmentModalOpen(false)}
+                                    className="text-gray-400 hover:text-gray-600"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-6">
+                                Upload photos, documents, or receipts for this item.
+                            </p>
+                            <div className="border-2 border-dashed border-gray-200 rounded-lg p-8">
+                                <div className="text-center">
+                                    <Upload className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                                    <input
+                                        type="file"
+                                        id="file-upload"
+                                        className="hidden"
+                                        onChange={handleFileUpload}
+                                        accept="image/*,application/pdf"
+                                        disabled={uploading}
+                                    />
+                                    <label
+                                        htmlFor="file-upload"
+                                        className={`inline-block px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium cursor-pointer hover:bg-blue-700 ${uploading ? 'opacity-50 cursor-not-allowed' : ''
+                                            }`}
+                                    >
+                                        {uploading ? 'Uploading...' : 'Choose File'}
+                                    </label>
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        PNG, JPG or PDF up to 10MB
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -196,28 +609,3 @@ export default function ItemDetailPage() {
         </Layout>
     );
 }
-
-// UI HELPERS
-const DetailItem = ({ icon, label, value }: any) => (
-    <div className="flex items-center gap-6">
-        <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-primary-400 shadow-inner">{icon}</div>
-        <div className="min-w-0">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">{label}</p>
-            <p className="text-[17px] font-bold truncate leading-none">{value}</p>
-        </div>
-    </div>
-);
-
-const SectionTitle = ({ title, dotColor }: any) => (
-    <div className="flex items-center gap-4">
-        <div className={`w-3 h-3 rounded-full ${dotColor}`} />
-        <h3 className="text-[22px] font-black text-slate-900 tracking-tight">{title}</h3>
-    </div>
-);
-
-const TabRow = ({ label, value }: any) => (
-    <div className="flex flex-col border-l-2 border-slate-100 pl-6 py-1">
-        <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">{label}</p>
-        <p className="text-[18px] font-bold text-slate-800 leading-none">{value}</p>
-    </div>
-);

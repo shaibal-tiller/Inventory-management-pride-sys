@@ -1,19 +1,13 @@
 import { create } from "zustand";
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  groupId: string;
-  groupName: string;
-}
+
 
 interface AuthState {
   token: string | null;
-  attachmentToken: string | null; // Added field
-  user: User | null;
+  attachmentToken: string | null;
+  user: any | null;
   isAuthenticated: boolean;
-  setAuth: (token: string, attachmentToken: string, user: User) => void; // Updated signature
+  setAuth: (token: string, attachmentToken: string, user: any) => void;
   logout: () => void;
 }
 
