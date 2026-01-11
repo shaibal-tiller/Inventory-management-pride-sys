@@ -1,5 +1,5 @@
 import { ChevronRight, MapPin } from 'lucide-react';
-import { TreeItem } from '../../lib/api';
+import type { TreeItem } from '../../lib/api';
 
 interface LocationTreeNodeProps {
     node: TreeItem;

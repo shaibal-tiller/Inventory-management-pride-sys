@@ -79,25 +79,28 @@ export default function LoginPage() {
             </div>
 
             {/* Right Side - Login Form */}
-            <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8">
-                <div className="w-full max-w-md">
+            <div className="w-full lg:w-1/2 flex flex-col items-center justify-between p-8">
+                <div className="w-full max-w-md flex-1 flex flex-col justify-center">
                     {/* App Logo & Title */}
-                    <div className="flex items-center justify-center mb-8">
+                    <div className="text-center mb-8">
                         <img
                             src={loginIcon}
                             alt="Home Inventory"
-                            className="w-16 h-16"
+                            className="w-16 h-16 mx-auto mb-4"
                         />
+                        <h1 className="text-2xl font-bold text-gray-900 mb-1">
+                            Home Inventory
+                        </h1>
+                        <p className="text-gray-500 text-sm">
+                            Track and organize your things
+                        </p>
                     </div>
 
                     {/* Login Form */}
                     <div className="bg-white rounded-2xl shadow-xl p-8">
-                        <h1 className="text-3xl font-bold text-gray-900 mb-2 text-center">
-                            Welcome Back
-                        </h1>
-                        <p className="text-gray-500 text-center mb-8">
-                            Sign in to continue to your inventory
-                        </p>
+                        <h2 className="text-xl font-semibold text-gray-900 mb-6 text-center">
+                            Sign in to your account
+                        </h2>
 
                         {error && (
                             <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r text-red-700 text-sm">
@@ -185,9 +188,21 @@ export default function LoginPage() {
                         <p className="mt-6 text-center text-sm text-gray-600">
                             Don't have an account?{' '}
                             <a href="#" className="text-blue-600 hover:text-blue-700 font-semibold">
-                                Create Account
+                                Create one
                             </a>
                         </p>
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <div className="w-full max-w-md text-center mt-8">
+                    <p className="text-xs text-gray-500 mb-2">Version 1.2.4</p>
+                    <div className="flex items-center justify-center gap-1 text-xs text-gray-500">
+                        <a href="#" className="hover:text-gray-700">Help Center</a>
+                        <span>•</span>
+                        <a href="#" className="hover:text-gray-700">Privacy Policy</a>
+                        <span>•</span>
+                        <a href="#" className="hover:text-gray-700">Terms of Service</a>
                     </div>
                 </div>
             </div>

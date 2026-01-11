@@ -16,7 +16,7 @@ interface ItemImageGalleryProps {
  * Displays main image with thumbnail gallery
  */
 export function ItemImageGallery({
-    itemId,
+    
     itemName,
     imageId,
     attachments,
@@ -28,9 +28,9 @@ export function ItemImageGallery({
     const currentImageId = selectedImageId || imageId;
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 h-[51vh] flex flex-col">
             {/* Main Image Display */}
-            <div className="bg-gray-100 rounded-lg aspect-square flex items-center justify-center overflow-hidden">
+            <div className="bg-gray-100 rounded-lg flex-1 flex items-center justify-center overflow-hidden">
                 {currentImageId ? (
                     <img
                         src={getImageUrl(currentImageId)}

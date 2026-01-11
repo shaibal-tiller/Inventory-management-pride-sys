@@ -19,7 +19,7 @@ interface ItemKeyDetailsProps {
  */
 export function ItemKeyDetails({ item }: ItemKeyDetailsProps) {
     return (
-        <div className="bg-gray-50 rounded-lg p-6">
+        <div className="bg-gray-50 rounded-lg p-6 h-[51vh] overflow-y-auto">
             <h3 className="text-sm font-semibold text-gray-900 mb-4">Key Details</h3>
             <div className="space-y-4">
                 {/* Location */}

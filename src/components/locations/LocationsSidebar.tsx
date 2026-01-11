@@ -1,5 +1,5 @@
 import { Search, Plus } from 'lucide-react';
-import { TreeItem } from '../../lib/api';
+import type { TreeItem } from '../../lib/api';
 import { LocationTreeNode } from './LocationTreeNode';
 
 interface LocationsSidebarProps {
