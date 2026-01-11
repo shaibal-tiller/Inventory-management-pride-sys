@@ -1,80 +1,83 @@
-import axios from 'axios';
+import axios from "axios";
 
-// Base API URL
-export const API_BASE_URL = 'http://4.213.57.100:3100/api';
+// Using relative path to work with the Vite proxy configured in vite.config.ts
+export const API_BASE_URL = "/api";
 
-// Create axios instance
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
+  },
+  paramsSerializer: (params) => {
+    const searchParams = new URLSearchParams();
+    for (const key in params) {
+      const value = params[key];
+      if (Array.isArray(value)) {
+        value.forEach((v) => searchParams.append(key, v));
+      } else if (value !== undefined) {
+        searchParams.append(key, value);
+      }
+    }
+    return searchParams.toString();
   },
 });
 
-// Request interceptor to add auth token
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem("auth_token");
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      const authHeader = token.startsWith("Bearer ")
+        ? token
+        : `Bearer ${token}`;
+      config.headers.Authorization = authHeader;
     }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Response interceptor for error handling
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('auth_token');
-      window.location.href = '/login';
+      localStorage.removeItem("auth_token");
+      if (!window.location.pathname.includes("/login")) {
+        window.location.href = "/login";
+      }
     }
     return Promise.reject(error);
   }
 );
+export interface TreeItem {
+  id: string;
+  name: string;
+  type: "location" | "item";
+  children?: TreeItem[];
+}
 
-// API Types
+export interface LocationOut {
+  id: string;
+  name: string;
+  description?: string;
+  totalPrice?: number;
+  createdAt: string;
+  updatedAt: string;
+  parent?: {
+    id: string;
+    name: string;
+  };
+}
+
 export interface LoginRequest {
   username: string;
   password: string;
   stayLoggedIn?: boolean;
 }
 
-export interface RegisterRequest {
-  email: string;
-  name: string;
-  password: string;
-}
-
 export interface TokenResponse {
   token: string;
   attachmentToken: string;
   expiresAt: string;
-}
-
-export interface Item {
-  id: string;
-  name: string;
-  description: string;
-  quantity: number;
-  assetId: string;
-  purchasePrice: number;
-  purchaseTime?: string;
-  location?: Location;
-  labels: Label[];
-  imageId?: string;
-  thumbnailId?: string;
-  archived: boolean;
-  insured: boolean;
-  createdAt: string;
-  updatedAt: string;
-  manufacturer?: string;
-  modelNumber?: string;
-  serialNumber?: string;
-  warrantyExpires?: string;
-  notes?: string;
 }
 
 export interface ItemSummary {
@@ -84,93 +87,11 @@ export interface ItemSummary {
   quantity: number;
   assetId: string;
   purchasePrice: number;
-  location?: LocationSummary;
-  labels: Label[];
-  imageId?: string;
+  location?: { id: string; name: string };
+  labels: Array<{ id: string; name: string; color: string }>;
   thumbnailId?: string;
   archived: boolean;
-  insured: boolean;
-  createdAt: string;
   updatedAt: string;
-}
-
-export interface ItemCreate {
-  name: string;
-  description?: string;
-  quantity?: number;
-  locationId?: string;
-  labelIds?: string[];
-  parentId?: string | null;
-}
-
-export interface ItemUpdate extends ItemCreate {
-  id: string;
-  assetId?: string;
-  purchasePrice?: number;
-  purchaseTime?: string;
-  purchaseFrom?: string;
-  manufacturer?: string;
-  modelNumber?: string;
-  serialNumber?: string;
-  insured?: boolean;
-  lifetimeWarranty?: boolean;
-  warrantyExpires?: string;
-  warrantyDetails?: string;
-  soldTime?: string;
-  soldPrice?: number;
-  soldTo?: string;
-  soldNotes?: string;
-  notes?: string;
-  archived?: boolean;
-  fields?: ItemField[];
-}
-
-export interface ItemField {
-  id?: string;
-  name: string;
-  type: 'text' | 'number' | 'boolean' | 'time';
-  textValue?: string;
-  numberValue?: number;
-  booleanValue?: boolean;
-}
-
-export interface Location {
-  id: string;
-  name: string;
-  description: string;
-  createdAt: string;
-  updatedAt: string;
-  parent?: LocationSummary;
-  children?: LocationSummary[];
-}
-
-export interface LocationSummary {
-  id: string;
-  name: string;
-  description: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface LocationCreate {
-  name: string;
-  description?: string;
-  parentId?: string | null;
-}
-
-export interface Label {
-  id: string;
-  name: string;
-  description: string;
-  color: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface LabelCreate {
-  name: string;
-  description?: string;
-  color?: string;
 }
 
 export interface PaginationResult<T> {
@@ -180,110 +101,74 @@ export interface PaginationResult<T> {
   total: number;
 }
 
-export interface TreeItem {
-  id: string;
-  name: string;
-  type: 'location' | 'item';
-  children?: TreeItem[];
+export interface ItemDetail extends ItemSummary {
+  manufacturer?: string;
+  modelNumber?: string;
+  serialNumber?: string;
+  purchaseTime?: string;
+  warrantyExpires?: string;
+  notes?: string;
+
+  imageId?: string;
+  attachments?: Array<{
+    id: string;
+    title: string;
+    mimeType: string;
+  }>;
 }
 
-// API Functions
 export const api = {
-  // Auth
-  login: async (data: LoginRequest): Promise<TokenResponse> => {
-    const response = await apiClient.post<TokenResponse>('/v1/users/login', data);
-    return response.data;
-  },
-
-  register: async (data: RegisterRequest): Promise<void> => {
-    await apiClient.post('/v1/users/register', data);
-  },
+  // Auth & User
+  login: async (data: any) =>
+    (
+      await apiClient.post("/v1/users/login", new URLSearchParams(data), {
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      })
+    ).data,
+  getSelf: async () => (await apiClient.get("/v1/users/self")).data.item,
 
   // Items
-  getItems: async (params?: {
-    q?: string;
-    page?: number;
-    pageSize?: number;
-    labels?: string[];
-    locations?: string[];
-  }): Promise<PaginationResult<ItemSummary>> => {
-    const response = await apiClient.get<PaginationResult<ItemSummary>>('/v1/items', { params });
-    return response.data;
-  },
-
-  getItem: async (id: string): Promise<Item> => {
-    const response = await apiClient.get<Item>(`/v1/items/${id}`);
-    return response.data;
-  },
-
-  createItem: async (data: ItemCreate): Promise<ItemSummary> => {
-    const response = await apiClient.post<ItemSummary>('/v1/items', data);
-    return response.data;
-  },
-
-  updateItem: async (id: string, data: ItemUpdate): Promise<Item> => {
-    const response = await apiClient.put<Item>(`/v1/items/${id}`, data);
-    return response.data;
-  },
-
-  deleteItem: async (id: string): Promise<void> => {
-    await apiClient.delete(`/v1/items/${id}`);
-  },
+  getItems: async (params?: any) =>
+    (await apiClient.get("/v1/items", { params })).data,
+  getItem: async (id: string) => (await apiClient.get(`/v1/items/${id}`)).data,
+  createItem: async (data: any) =>
+    (await apiClient.post("/v1/items", data)).data,
+  deleteItem: async (id: string) => await apiClient.delete(`/v1/items/${id}`),
 
   // Locations
-  getLocations: async (): Promise<Location[]> => {
-    const response = await apiClient.get<Location[]>('/v1/locations');
-    return response.data;
-  },
-
-  getLocation: async (id: string): Promise<Location> => {
-    const response = await apiClient.get<Location>(`/v1/locations/${id}`);
-    return response.data;
-  },
-
-  getLocationsTree: async (withItems?: boolean): Promise<TreeItem[]> => {
-    const response = await apiClient.get<TreeItem[]>('/v1/locations/tree', {
-      params: { withItems }
-    });
-    return response.data;
-  },
-
-  createLocation: async (data: LocationCreate): Promise<LocationSummary> => {
-    const response = await apiClient.post<LocationSummary>('/v1/locations', data);
-    return response.data;
-  },
-
-  updateLocation: async (id: string, data: LocationCreate): Promise<Location> => {
-    const response = await apiClient.put<Location>(`/v1/locations/${id}`, data);
-    return response.data;
-  },
-
-  deleteLocation: async (id: string): Promise<void> => {
-    await apiClient.delete(`/v1/locations/${id}`);
-  },
+  getLocationsTree: async (withItems: boolean = false) =>
+    (await apiClient.get("/v1/locations/tree", { params: { withItems } })).data,
+  getLocation: async (id: string) =>
+    (await apiClient.get(`/v1/locations/${id}`)).data,
+  createLocation: async (data: {
+    name: string;
+    description?: string;
+    parentId?: string | null;
+  }) => (await apiClient.post("/v1/locations", data)).data,
+  updateLocation: async (
+    id: string,
+    data: { name: string; description?: string; parentId?: string | null }
+  ) => (await apiClient.put(`/v1/locations/${id}`, data)).data,
+  deleteLocation: async (id: string) =>
+    await apiClient.delete(`/v1/locations/${id}`),
 
   // Labels
-  getLabels: async (): Promise<Label[]> => {
-    const response = await apiClient.get<Label[]>('/v1/labels');
-    return response.data;
+  getLabels: async () => (await apiClient.get("/v1/labels")).data,
+
+  // Attachments
+  uploadAttachment: async (itemId: string, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("name", file.name);
+    return (
+      await apiClient.post(`/v1/items/${itemId}/attachments`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+    ).data;
   },
 
-  getLabel: async (id: string): Promise<Label> => {
-    const response = await apiClient.get<Label>(`/v1/labels/${id}`);
-    return response.data;
-  },
-
-  createLabel: async (data: LabelCreate): Promise<Label> => {
-    const response = await apiClient.post<Label>('/v1/labels', data);
-    return response.data;
-  },
-
-  updateLabel: async (id: string, data: LabelCreate): Promise<Label> => {
-    const response = await apiClient.put<Label>(`/v1/labels/${id}`, data);
-    return response.data;
-  },
-
-  deleteLabel: async (id: string): Promise<void> => {
-    await apiClient.delete(`/v1/labels/${id}`);
+  getItemImageUrl: (itemId: string, attachmentId: string) => {
+    const token = localStorage.getItem("attachment_token");
+    return `${API_BASE_URL}/v1/items/${itemId}/attachments/${attachmentId}?token=${token}`;
   },
 };

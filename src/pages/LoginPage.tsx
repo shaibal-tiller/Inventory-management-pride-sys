@@ -23,24 +23,32 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
+            // 1. Perform Login using the form-encoded method that works
             const response = await api.login({
                 username: formData.username,
                 password: formData.password,
                 stayLoggedIn: formData.rememberMe,
             });
 
-            // Mock user data (you'll get this from a separate API call in production)
+            // 2. Define a mock user to satisfy the authStore requirements
+            // This avoids calling /v1/users/self for now
             const mockUser = {
                 id: '1',
                 name: formData.username.split('@')[0],
                 email: formData.username,
-                groupId: '1',
-                groupName: 'Home Inventory',
+                groupId: 'default',
+                groupName: 'My Inventory',
             };
 
-            setAuth(response.token, mockUser);
+            // 3. Store tokens and the mock user in the store and localStorage
+            // setAuth handles saving to localStorage based on your authStore implementation
+            setAuth(response.token, response.attachmentToken, mockUser);
+
+            // 4. Navigate directly to inventory
             navigate('/inventory');
+
         } catch (err: any) {
+            console.error('Login error:', err);
             setError(err.response?.data?.error || 'Invalid username or password');
         } finally {
             setIsLoading(false);

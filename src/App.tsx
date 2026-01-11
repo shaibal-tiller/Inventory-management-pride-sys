@@ -1,15 +1,17 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Suspense, lazy } from 'react';
-import { ErrorBoundary } from './components/ErrorBoundary.tsx';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { useAuthStore } from './store/authStore';
+import './index.css';
+
 
 // Lazy load pages
 const LoginPage = lazy(() => import('./pages/LoginPage'));
-const InventoryPage = lazy(() => import('./pages/InventoryPage'));
-const LocationsPage = lazy(() => import('./pages/LocationsPage'));
-const ItemDetailPage = lazy(() => import('./pages/ItemDetailPage'));
+const InventoryPage = lazy(() => import('./pages/InventoryPage.tsx'));
+const LocationsPage = lazy(() => import('./pages/LocationsPage.tsx'));
+const ItemDetailPage = lazy(() => import('./pages/ItemDetailPage.tsx'));
 
 // Create query client
 const queryClient = new QueryClient({
@@ -41,14 +43,7 @@ function App() {
           <Suspense fallback={<LoadingSpinner />}>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <InventoryPage />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/" element={<Navigate to="/inventory" replace />} />
               <Route
                 path="/inventory"
                 element={
